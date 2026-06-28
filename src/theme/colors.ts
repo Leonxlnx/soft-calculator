@@ -29,6 +29,9 @@ export const colors = {
     orangeLight: '#FFBA47',
     orangeDark: '#E89A1C',
     orangeText: '#FFFFFF',
+    // Inverted state shown while an operator is the active/pending op.
+    orangeActive: '#FFFFFF',
+    orangeActiveText: '#F5A623',
   },
 };
 

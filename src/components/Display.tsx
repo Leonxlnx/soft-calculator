@@ -8,50 +8,56 @@ import Animated, {
     withSpring,
 } from 'react-native-reanimated';
 import { useTheme } from '../theme/ThemeContext';
+import { spring, timing } from '../theme/motion';
 
 interface DisplayProps {
     value: string;
     expression: string;
+    isError?: boolean;
 }
 
-export function Display({ value, expression }: DisplayProps) {
+export function Display({ value, expression, isError = false }: DisplayProps) {
     const { colorScheme } = useTheme();
     const scale = useSharedValue(1);
+    const translateY = useSharedValue(0);
     const opacity = useSharedValue(1);
 
     useEffect(() => {
-        // Animate on value change
+        // Value-change feel: brief sink + fade then a springy pop back, so digits
+        // "land" with weight instead of snapping in.
+        translateY.value = withSequence(
+            withTiming(6, { duration: 40 }),
+            withSpring(0, spring.pop)
+        );
         scale.value = withSequence(
-            withTiming(1.02, { duration: 50 }),
-            withSpring(1, { damping: 15, stiffness: 200 })
+            withTiming(0.96, { duration: 40 }),
+            withSpring(1, spring.pop)
         );
         opacity.value = withSequence(
-            withTiming(0.8, { duration: 30 }),
-            withTiming(1, { duration: 100 })
+            withTiming(0.55, { duration: 30 }),
+            withTiming(1, timing.fast)
         );
-    }, [value]);
+    }, [value, scale, translateY, opacity]);
 
     const animatedStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: scale.value }],
+        transform: [{ scale: scale.value }, { translateY: translateY.value }],
         opacity: opacity.value,
     }));
 
-    // Dynamic font size based on value length
+    // Font scales down as the number grows so long results stay on one line.
     const getFontSize = () => {
         const len = value.replace(/,/g, '').length;
-        if (len > 10) return 40;
-        if (len > 8) return 48;
-        if (len > 6) return 56;
+        if (len > 11) return 38;
+        if (len > 9) return 46;
+        if (len > 7) return 54;
+        if (len > 5) return 60;
         return 64;
     };
 
     return (
         <View style={styles.container}>
             <Text
-                style={[
-                    styles.expression,
-                    { color: colorScheme.textSecondary },
-                ]}
+                style={[styles.expression, { color: colorScheme.textSecondary }]}
                 numberOfLines={1}
             >
                 {expression}
@@ -59,11 +65,15 @@ export function Display({ value, expression }: DisplayProps) {
             <Animated.Text
                 style={[
                     styles.value,
-                    { color: colorScheme.text, fontSize: getFontSize() },
+                    {
+                        color: isError ? '#FF453A' : colorScheme.text,
+                        fontSize: getFontSize(),
+                    },
                     animatedStyle,
                 ]}
                 numberOfLines={1}
                 adjustsFontSizeToFit
+                minimumFontScale={0.5}
             >
                 {value}
             </Animated.Text>
